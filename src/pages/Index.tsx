@@ -1,86 +1,43 @@
-
 import { useState } from 'react';
-import { BookOpen, Upload, Search, Users, Star, Download } from 'lucide-react';
+import { BookOpen, Upload, Search, Users, Star, Download, LogIn } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import SubjectCard from '../components/SubjectCard';
 import UploadModal from '../components/UploadModal';
+import AuthModal from '../components/AuthModal';
 import Hero from '../components/Hero';
 import Stats from '../components/Stats';
-
-const subjects = [
-  {
-    id: 1,
-    name: "Programming Fundamentals",
-    code: "BCA-101",
-    description: "C/C++, Java, Python programming concepts and practical implementations",
-    color: "bg-blue-500",
-    icon: "💻",
-    totalNotes: 24,
-    recentUploads: 3
-  },
-  {
-    id: 2,
-    name: "Data Structures & Algorithms",
-    code: "BCA-201",
-    description: "Arrays, Linked Lists, Trees, Graphs, Sorting & Searching algorithms",
-    color: "bg-green-500",
-    icon: "🔗",
-    totalNotes: 18,
-    recentUploads: 2
-  },
-  {
-    id: 3,
-    name: "Database Management Systems",
-    code: "BCA-301",
-    description: "SQL, NoSQL, Database design, Normalization, and RDBMS concepts",
-    color: "bg-purple-500",
-    icon: "🗄️",
-    totalNotes: 21,
-    recentUploads: 4
-  },
-  {
-    id: 4,
-    name: "Web Development",
-    code: "BCA-401",
-    description: "HTML, CSS, JavaScript, React, Node.js, and full-stack development",
-    color: "bg-orange-500",
-    icon: "🌐",
-    totalNotes: 32,
-    recentUploads: 5
-  },
-  {
-    id: 5,
-    name: "Software Engineering",
-    code: "BCA-501",
-    description: "SDLC, Agile, Testing, Project management, and software design patterns",
-    color: "bg-red-500",
-    icon: "⚙️",
-    totalNotes: 16,
-    recentUploads: 1
-  },
-  {
-    id: 6,
-    name: "Computer Networks",
-    code: "BCA-601",
-    description: "TCP/IP, OSI model, Network protocols, Security, and network administration",
-    color: "bg-indigo-500",
-    icon: "🔗",
-    totalNotes: 19,
-    recentUploads: 2
-  }
-];
+import { useAuth } from '@/hooks/useAuth';
+import { useSubjects, useNotes } from '@/hooks/useNotes';
 
 const Index = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const { user, signOut, loading } = useAuth();
+  
+  const { data: subjects = [], isLoading: subjectsLoading } = useSubjects();
+  const { data: recentNotes = [] } = useNotes();
 
   const filteredSubjects = subjects.filter(subject =>
     subject.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     subject.code.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const handleUploadClick = () => {
+    if (!user) {
+      setIsAuthModalOpen(true);
+    } else {
+      setIsUploadModalOpen(true);
+    }
+  };
+
+  if (loading) {
+    return <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
+      <div className="text-xl">Loading...</div>
+    </div>;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
@@ -97,13 +54,37 @@ const Index = () => {
                 <p className="text-sm text-gray-500">Your Study Companion</p>
               </div>
             </div>
-            <Button 
-              onClick={() => setIsUploadModalOpen(true)}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              <Upload className="h-4 w-4 mr-2" />
-              Upload Notes
-            </Button>
+            <div className="flex items-center space-x-3">
+              {user ? (
+                <>
+                  <span className="text-sm text-gray-600">Welcome, {user.email}</span>
+                  <Button 
+                    onClick={handleUploadClick}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload Notes
+                  </Button>
+                  <Button variant="outline" onClick={signOut}>
+                    Sign Out
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="outline" onClick={() => setIsAuthModalOpen(true)}>
+                    <LogIn className="h-4 w-4 mr-2" />
+                    Sign In
+                  </Button>
+                  <Button 
+                    onClick={handleUploadClick}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload Notes
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </header>
@@ -137,11 +118,15 @@ const Index = () => {
             <p className="text-gray-600">Access comprehensive notes for all BCA subjects</p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredSubjects.map((subject) => (
-              <SubjectCard key={subject.id} subject={subject} />
-            ))}
-          </div>
+          {subjectsLoading ? (
+            <div className="text-center">Loading subjects...</div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredSubjects.map((subject) => (
+                <SubjectCard key={subject.id} subject={subject} />
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Recent Activity Section */}
@@ -151,42 +136,22 @@ const Index = () => {
             Recent Activity
           </h3>
           <div className="space-y-3">
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <div className="flex items-center space-x-3">
-                <div className="bg-blue-100 p-2 rounded-full">
-                  <Download className="h-4 w-4 text-blue-600" />
+            {recentNotes.slice(0, 3).map((note) => (
+              <div key={note.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center space-x-3">
+                  <div className="bg-blue-100 p-2 rounded-full">
+                    <Download className="h-4 w-4 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">{note.title}</p>
+                    <p className="text-sm text-gray-500">
+                      {note.subjects?.name} - {new Date(note.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-medium text-gray-900">New notes uploaded for Web Development</p>
-                  <p className="text-sm text-gray-500">React.js components and hooks - 2 hours ago</p>
-                </div>
+                <Badge variant="secondary">New</Badge>
               </div>
-              <Badge variant="secondary">New</Badge>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <div className="flex items-center space-x-3">
-                <div className="bg-green-100 p-2 rounded-full">
-                  <Download className="h-4 w-4 text-green-600" />
-                </div>
-                <div>
-                  <p className="font-medium text-gray-900">Database Management notes updated</p>
-                  <p className="text-sm text-gray-500">SQL queries and optimization - 5 hours ago</p>
-                </div>
-              </div>
-              <Badge variant="secondary">Updated</Badge>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <div className="flex items-center space-x-3">
-                <div className="bg-purple-100 p-2 rounded-full">
-                  <Download className="h-4 w-4 text-purple-600" />
-                </div>
-                <div>
-                  <p className="font-medium text-gray-900">Data Structures practice problems added</p>
-                  <p className="text-sm text-gray-500">Binary trees and graph algorithms - 1 day ago</p>
-                </div>
-              </div>
-              <Badge variant="secondary">Popular</Badge>
-            </div>
+            ))}
           </div>
         </div>
       </main>
@@ -232,11 +197,16 @@ const Index = () => {
         </div>
       </footer>
 
-      {/* Upload Modal */}
+      {/* Modals */}
       <UploadModal 
         isOpen={isUploadModalOpen} 
         onClose={() => setIsUploadModalOpen(false)} 
         subjects={subjects}
+      />
+      
+      <AuthModal 
+        isOpen={isAuthModalOpen} 
+        onClose={() => setIsAuthModalOpen(false)} 
       />
     </div>
   );

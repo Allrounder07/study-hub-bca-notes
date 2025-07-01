@@ -3,16 +3,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FileText, TrendingUp, Clock } from "lucide-react";
+import { useNotes } from "@/hooks/useNotes";
 
 interface Subject {
-  id: number;
+  id: string;
   name: string;
   code: string;
   description: string;
   color: string;
   icon: string;
-  totalNotes: number;
-  recentUploads: number;
 }
 
 interface SubjectCardProps {
@@ -20,6 +19,15 @@ interface SubjectCardProps {
 }
 
 const SubjectCard = ({ subject }: SubjectCardProps) => {
+  const { data: notes = [] } = useNotes(subject.id);
+  const totalNotes = notes.length;
+  const recentUploads = notes.filter(note => {
+    const noteDate = new Date(note.created_at);
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    return noteDate > weekAgo;
+  }).length;
+
   return (
     <Card className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-0 shadow-md bg-white">
       <CardHeader className="pb-3">
@@ -42,11 +50,11 @@ const SubjectCard = ({ subject }: SubjectCardProps) => {
         <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
           <div className="flex items-center space-x-1">
             <FileText className="h-4 w-4" />
-            <span>{subject.totalNotes} notes</span>
+            <span>{totalNotes} notes</span>
           </div>
           <div className="flex items-center space-x-1">
             <TrendingUp className="h-4 w-4 text-green-500" />
-            <span>{subject.recentUploads} recent</span>
+            <span>{recentUploads} recent</span>
           </div>
         </div>
         <Button className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-md">

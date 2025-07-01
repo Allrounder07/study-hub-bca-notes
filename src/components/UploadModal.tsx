@@ -8,9 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Upload, FileText, Tag, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { useUploadNote } from "@/hooks/useNotes";
 
 interface Subject {
-  id: number;
+  id: string;
   name: string;
   code: string;
 }
@@ -24,44 +26,55 @@ interface UploadModalProps {
 const UploadModal = ({ isOpen, onClose, subjects }: UploadModalProps) => {
   const [formData, setFormData] = useState({
     title: '',
-    subject: '',
+    subject_id: '',
     description: '',
     tags: '',
-    uploaderName: '',
+    uploader_name: '',
     file: null as File | null
   });
   
   const { toast } = useToast();
+  const { user } = useAuth();
+  const uploadNoteMutation = useUploadNote();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.title || !formData.subject || !formData.file) {
+    if (!formData.title || !formData.subject_id) {
       toast({
         title: "Missing Information",
-        description: "Please fill in all required fields and select a file.",
+        description: "Please fill in title and select a subject.",
         variant: "destructive"
       });
       return;
     }
 
-    // Simulate upload process
-    toast({
-      title: "Upload Successful! 🎉",
-      description: `Your notes for ${formData.subject} have been uploaded successfully.`,
-    });
+    try {
+      const tagsArray = formData.tags ? formData.tags.split(',').map(tag => tag.trim()) : [];
+      
+      await uploadNoteMutation.mutateAsync({
+        title: formData.title,
+        description: formData.description,
+        subject_id: formData.subject_id,
+        tags: tagsArray,
+        uploader_name: formData.uploader_name || user?.email || 'Anonymous',
+        user_id: user?.id
+      });
 
-    // Reset form
-    setFormData({
-      title: '',
-      subject: '',
-      description: '',
-      tags: '',
-      uploaderName: '',
-      file: null
-    });
-    
-    onClose();
+      // Reset form
+      setFormData({
+        title: '',
+        subject_id: '',
+        description: '',
+        tags: '',
+        uploader_name: '',
+        file: null
+      });
+      
+      onClose();
+    } catch (error) {
+      console.error('Upload error:', error);
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -98,13 +111,13 @@ const UploadModal = ({ isOpen, onClose, subjects }: UploadModalProps) => {
 
           <div className="space-y-2">
             <Label htmlFor="subject">Subject *</Label>
-            <Select onValueChange={(value) => setFormData({ ...formData, subject: value })}>
+            <Select onValueChange={(value) => setFormData({ ...formData, subject_id: value })}>
               <SelectTrigger>
                 <SelectValue placeholder="Select a subject" />
               </SelectTrigger>
               <SelectContent>
                 {subjects.map((subject) => (
-                  <SelectItem key={subject.id} value={subject.name}>
+                  <SelectItem key={subject.id} value={subject.id}>
                     {subject.code} - {subject.name}
                   </SelectItem>
                 ))}
@@ -144,15 +157,15 @@ const UploadModal = ({ isOpen, onClose, subjects }: UploadModalProps) => {
               <Input
                 id="uploader"
                 placeholder="Your name (optional)"
-                value={formData.uploaderName}
-                onChange={(e) => setFormData({ ...formData, uploaderName: e.target.value })}
+                value={formData.uploader_name}
+                onChange={(e) => setFormData({ ...formData, uploader_name: e.target.value })}
                 className="pl-10"
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="file">Upload File *</Label>
+            <Label htmlFor="file">Upload File (Optional)</Label>
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
               <input
                 id="file"
@@ -179,9 +192,13 @@ const UploadModal = ({ isOpen, onClose, subjects }: UploadModalProps) => {
             <Button type="button" variant="outline" onClick={onClose} className="flex-1">
               Cancel
             </Button>
-            <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700">
+            <Button 
+              type="submit" 
+              className="flex-1 bg-blue-600 hover:bg-blue-700"
+              disabled={uploadNoteMutation.isPending}
+            >
               <Upload className="h-4 w-4 mr-2" />
-              Upload Notes
+              {uploadNoteMutation.isPending ? "Uploading..." : "Upload Notes"}
             </Button>
           </div>
         </form>
