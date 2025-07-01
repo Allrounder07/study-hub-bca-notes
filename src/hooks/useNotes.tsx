@@ -55,6 +55,7 @@ export const useNotes = (subjectId?: string) => {
             id,
             name,
             code,
+            description,
             color,
             icon
           )
