@@ -44,25 +44,25 @@ const Index = () => {
       {/* Header */}
       <header className="bg-white shadow-sm border-b sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+          <div className="flex justify-between items-center h-auto sm:h-16 py-2 gap-2">
             <div className="flex items-center space-x-3">
               <div className="bg-blue-600 p-2 rounded-lg">
                 <BookOpen className="h-6 w-6 text-white" />
               </div>
               <div>
                 <h1 className="text-xl font-bold text-gray-900">BCA Notes Hub</h1>
-                <p className="text-sm text-gray-500">Your Study Companion</p>
+                <p className="text-sm text-gray-500 hidden sm:block">Your Study Companion</p>
               </div>
             </div>
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center gap-2">
               {user ? (
                 <>
-                  <span className="text-sm text-gray-600">Welcome, {user.email}</span>
+                  <span className="text-sm text-gray-600 hidden md:inline">Welcome, {user.email}</span>
                   <Button 
                     onClick={handleUploadClick}
                     className="bg-blue-600 hover:bg-blue-700"
                   >
-                    <Upload className="h-4 w-4 mr-2" />
+                    <Upload className="h-4 w-4 sm:mr-2 mr-0" />
                     Upload Notes
                   </Button>
                   <Button variant="outline" onClick={signOut}>
@@ -72,14 +72,14 @@ const Index = () => {
               ) : (
                 <>
                   <Button variant="outline" onClick={() => setIsAuthModalOpen(true)}>
-                    <LogIn className="h-4 w-4 mr-2" />
+                    <LogIn className="h-4 w-4 sm:mr-2 mr-0" />
                     Sign In
                   </Button>
                   <Button 
                     onClick={handleUploadClick}
                     className="bg-blue-600 hover:bg-blue-700"
                   >
-                    <Upload className="h-4 w-4 mr-2" />
+                    <Upload className="h-4 w-4 sm:mr-2 mr-0" />
                     Upload Notes
                   </Button>
                 </>
